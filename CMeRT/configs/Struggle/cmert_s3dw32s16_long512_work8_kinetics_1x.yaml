@@ -1,0 +1,66 @@
+DATA:
+  DATA_NAME: 'Struggle'
+  DATA_INFO: 'data/data_info.json'
+  DATA_ROOT: '/media/alexa/WORKSPACE/Shijia-stage-two/new_struggle_dataset'
+  DATA_SPLIT_PATH: '/media/alexa/WORKSPACE/Shijia-stage-two/new_struggle_dataset/splits/separate_attempts/combined_split.json'
+  TRAIN_SEUBSET: ['train']
+  TEST_SUBSET: ['validation']
+  CLASS_NAMES: ["Background", "Struggle"]
+  NUM_CLASSES: 2
+  IGNORE_INDEX: -100
+  METRICS: 'cAP'
+  FPS: 3.125 
+INPUT:
+  MODALITY: 'visual'
+  VISUAL_FEATURE: 'rgb_s3d'
+MODEL:
+  MODEL_NAME: 'CMeRT'
+  FEATURE_HEAD:
+    LINEAR_ENABLED: True
+    LINEAR_OUT_FEATURES: 1024
+  LSTR:
+    NUM_HEADS: 8
+    DIM_FEEDFORWARD: 1024
+    DROPOUT: 0.3
+    ACTIVATION: 'relu'
+    LONG_MEMORY_SECONDS: 512
+    LONG_MEMORY_SAMPLE_RATE: 4
+    LONG_MEMORY_USE_PE: False
+    LONG_MEMORY_INCLUDE_WORK: True
+    WORK_MEMORY_SECONDS: 8
+    WORK_MEMORY_SAMPLE_RATE: 1
+    CONTEXT_SECONDS: 1
+    CONTEXT_MEMORY_SAMPLE_RATE: 1
+    FUTURE_SECONDS: 16
+    FUTURE_SAMPLE_RATE: 1
+    ANTICIPATION_SECONDS: 2
+    REFINE_TIMES: 1
+    ENC_MODULE: [[16, 1, True], [32, 2, True]] #
+    DEC_MODULE: [-1, 2, True]
+    GEN_MODULE: [ 32, 2, True ]
+    FUT_MODULE: [[ 48, 1, True ],]
+  CRITERIONS: [['MCE', {}]]
+  PP_SIZE: 5
+DATA_LOADER:
+  BATCH_SIZE: 32
+  NUM_WORKERS: 8
+  PIN_MEMORY: True
+  TYPE: ''
+SOLVER:
+  ENABLE_WANDB: True
+  NUM_EPOCHS: 20
+  OPTIMIZER: 'adam'
+  BASE_LR: 5e-06
+  WEIGHT_DECAY: 5e-04
+  SAVE_EVERY: 1
+  S1_W: 0.1
+  S2_W: 1.0
+  F_W: 0.5
+  PHASES: ['train', 'test']
+  SCHEDULER:
+    SCHEDULER_NAME: 'warmup_cosine'
+    WARMUP_FACTOR: 0.1
+    WARMUP_EPOCHS: 5.0
+    WARMUP_METHOD: 'linear'
+
+
