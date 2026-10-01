@@ -62,9 +62,14 @@ def make_config(base, split, train, test, comment, **fields):
 
 
 def lstr_configs(base):
-    """LSTR: Table 1 (individual and combined training) and Fig. 2 (left)."""
+    """LSTR: Table 1 (individual and combined training; detection and 2 s anticipation) and Fig. 2 (left)."""
     for act, short, _ in ACTIVITIES:
         dropout = '0.4' if act == 'Tying_Knots' else '0.2'
+        # online detection is the special case of anticipation with delta = 0 (Sec. 3.2):
+        # LSTR is trained without anticipation tokens for the detection results (Table 1, Det.)
+        yield 'within_activity', f'lstr_{short}_det', make_config(
+            base, sepattempt(act), ALL_ATTEMPTS, ['validation'], f'Table 1 (individual training), detection: {act}',
+            DROPOUT=dropout, ANTICIPATION_SECONDS='0')
         for sec in (2, 4, 6, 8):
             setting = 'within_activity' if sec == 2 else 'anticipation_length'
             comment = (f'Table 1 (individual training): {act}' if sec == 2
@@ -72,6 +77,9 @@ def lstr_configs(base):
             yield setting, f'lstr_{short}_ant{sec}s', make_config(
                 base, sepattempt(act), ALL_ATTEMPTS, ['validation'], comment,
                 DROPOUT=dropout, ANTICIPATION_SECONDS=str(sec))
+    yield 'combined', 'lstr_combined_det', make_config(
+        base, COMBINED_SPLIT, ['train'], ['validation'], 'Table 1 (combined training), detection: all four activities',
+        ANTICIPATION_SECONDS='0', NUM_EPOCHS='50', BASE_LR='1e-7')
     yield 'combined', 'lstr_combined_ant2s', make_config(
         base, COMBINED_SPLIT, ['train'], ['validation'], 'Table 1 (combined training): all four activities',
         ANTICIPATION_SECONDS='2', NUM_EPOCHS='50', BASE_LR='1e-7')
