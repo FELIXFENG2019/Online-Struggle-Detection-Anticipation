@@ -1,9 +1,10 @@
 # Online Struggle Detection and Anticipation
 
+[![WACV 2026](https://img.shields.io/badge/WACV-2026-blue.svg)](https://doi.org/10.1109/WACV61042.2026.00393)
 [![arXiv](https://img.shields.io/badge/arXiv-2512.09847-b31b1b.svg)](https://arxiv.org/abs/2512.09847)
 [![Dataset: EvoStruggle](https://img.shields.io/badge/Dataset-EvoStruggle-blue.svg?logo=github)](https://github.com/FELIXFENG2019/EvoStruggle)
 
-This is the code release corresponding to the paper titled ["From Detection to Anticipation: Online Understanding of Struggles across Various Tasks and Activities"](https://arxiv.org/abs/2512.09847).
+This is the code release corresponding to the paper titled ["From Detection to Anticipation: Online Understanding of Struggles across Various Tasks and Activities"](https://arxiv.org/abs/2512.09847) (WACV 2026).
 
 The dataset used is [EvoStruggle](https://github.com/FELIXFENG2019/EvoStruggle/).
 
@@ -57,14 +58,16 @@ There is one config file per experiment of the paper, in `configs/Struggle/paper
 
 | Experiment (paper) | Model | Configs | Train on | Test on |
 |--------------------|-------|---------|----------|---------|
-| Table 1, individual training | LSTR, CMeRT | `within_activity/lstr_<activity>_ant2s`, `within_activity/cmert_<activity>` | `train_attempt01`–`05` | `validation` |
-| Table 1, combined training | LSTR, CMeRT | `combined/lstr_combined_ant2s`, `combined/cmert_combined` | `train` (all activities) | `validation` (all activities) |
+| Table 1, individual training | LSTR, CMeRT | `within_activity/lstr_<activity>_ant2s` (Ant.), `within_activity/lstr_<activity>_det` (Det.), `within_activity/cmert_<activity>` (both) | `train_attempt01`–`05` | `validation` |
+| Table 1, combined training | LSTR, CMeRT | `combined/lstr_combined_ant2s` (Ant.), `combined/lstr_combined_det` (Det.), `combined/cmert_combined` (both) | `train` (all activities) | `validation` (all activities) |
 | Fig. 2 (left), anticipation length 4/6/8 s | LSTR | `anticipation_length/lstr_<activity>_ant<N>s` | `train_attempt01`–`05` | `validation` |
 | Table 2, activity-level generalization | CMeRT | `activity_generalization/cmert_activitygen_<activity>` | `train` (other three activities) | `test` (validation set of the held-out activity) |
 | Table 3, task-level generalization | CMeRT | `task_generalization/cmert_taskgen_<activity>_task<XX>` | `train` (other tasks) | `test` (held-out task) |
 | Figs. 6–8, skill evolution | CMeRT | `separate_attempts/cmert_sepattempt_<activity>_attempt<XX>` | `train_attempt<XX>` | `validation` |
 
 `<activity>` is one of `tyingknots`, `origami`, `tangram`, `shufflecards`.
+
+Online detection is the special case of anticipation with an anticipation window of zero (Sec. 3.2). CMeRT outputs both the detection and the anticipation results with one model. For LSTR, the detection results are obtained with a model trained without anticipation (`ANTICIPATION_SECONDS: 0`, configs `*_det`).
 
 During training, the model is evaluated on the test subset after every epoch and a checkpoint is saved every epoch (CMeRT: from epoch 3). **The results in the paper are those of the best epoch on the test subset**, which is printed at the end of training (`Best ... on the test subset`).
 
@@ -116,7 +119,19 @@ python tools/test_net.py --config_file configs/Struggle/LSTR/paper/within_activi
 
 ### Runtime / feature ablation (Table 5)
 
-`CMeRT/configs/Struggle/cmert_s3dw32s16_long512_work8_kinetics_1x.yaml` (S3D features, `INPUT.FEATURE_DIR: s3d_features`) and `CMeRT/configs/Struggle/cmert_slowfastw32s32_long512_work8_kinetics_1x.yaml` (SlowFast with stride 32, `INPUT.FEATURE_DIR: slowfast_w32s32_features`) are trained on all four activities. These features have to be extracted separately and placed in the corresponding folder under `data/EvoStruggle/extracted_features/`.
+Both configs are trained on all four activities:
+
+- `CMeRT/configs/Struggle/cmert_slowfastw32s32_long512_work8_kinetics_1x.yaml`: sparser SlowFast features, extracted with a sliding window of 32 frames and a stride of 32 frames (instead of 16), i.e. 1.5625 feature FPS. They are read from `extracted_features/stride32/slowfast_features/`:
+
+  ```bash
+  # from the root of this repository
+  for act in Tying_Knots Origami Tangram Shuffle_Cards; do
+      python data/EvoStruggle/tools/video_feature_extractor.py --task $act --stride 32 \
+          --save_dir data/EvoStruggle/extracted_features/stride32
+  done
+  ```
+
+- `CMeRT/configs/Struggle/cmert_s3dw32s16_long512_work8_kinetics_1x.yaml`: 1024-d S3D features (window 32, stride 16), read from `extracted_features/s3d_features/`. The EvoStruggle feature extractor only supports SlowFast, so these features have to be extracted with an S3D model separately.
 
 ## 4. Results in the Paper
 
@@ -179,14 +194,13 @@ Per-frame calibrated average precision (cAP, %) with SlowFast features; anticipa
 If you use this code, please cite:
 
 ```bibtex
-@misc{feng2025detectionanticipation,
+@inproceedings{feng2026detectionanticipation,
   title={From Detection to Anticipation: Online Understanding of Struggles across Various Tasks and Activities},
-  author={Shijia Feng and Michael Wray and Walterio Mayol-Cuevas},
-  year={2025},
-  eprint={2512.09847},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV},
-  url={https://arxiv.org/abs/2512.09847}
+  author={Feng, Shijia and Wray, Michael and Mayol-Cuevas, Walterio},
+  booktitle={2026 IEEE/CVF Winter Conference on Applications of Computer Vision (WACV)},
+  pages={4036--4045},
+  year={2026},
+  doi={10.1109/WACV61042.2026.00393}
 }
 ```
 
