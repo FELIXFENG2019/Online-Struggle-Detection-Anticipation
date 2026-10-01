@@ -120,7 +120,8 @@ def assert_and_infer_cfg(cfg, args):
     # Infer output dir
     config_name = osp.splitext(args.config_file)[0].split('/')[1:]
     task_name = osp.splitext(cfg.DATA.DATA_SPLIT_PATH)[0].split('/')[-3] + '-' + osp.splitext(cfg.DATA.DATA_SPLIT_PATH)[0].split('/')[-2]
-    cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, *config_name, task_name+'_focal')
+    # one output folder per config file (each experiment has its own config)
+    cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, *config_name)
     if cfg.SESSION:
         cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, cfg.SESSION)
 

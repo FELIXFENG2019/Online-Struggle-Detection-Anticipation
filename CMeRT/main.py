@@ -63,8 +63,8 @@ def do_perframe_det_train(cfg,
     s2_w = cfg.SOLVER.get('S2_W', 1.0)
     f_w = cfg.SOLVER.get('F_W', 0.5)
 
-    import wandb
     if cfg.SOLVER.ENABLE_WANDB:
+        import wandb
         wandb.login()
         run = wandb.init(
             project="cmert-struggle-detant",
@@ -72,6 +72,7 @@ def do_perframe_det_train(cfg,
             config=cfg
         )
 
+    best = {}  # metric name -> (best value, epoch)
     for epoch in range(cfg.SOLVER.START_EPOCH, cfg.SOLVER.START_EPOCH + cfg.SOLVER.NUM_EPOCHS):
         # Reset
         losses_dict = {}
@@ -192,6 +193,13 @@ def do_perframe_det_train(cfg,
 
         log.append('running time: {:.2f} sec'.format(end - start, ))
         logger.info(' | '.join(log))
+        if 'test' in cfg.SOLVER.PHASES:
+            epoch_results = {'det': det_result['mean_AP']}
+            if cfg.MODEL.LSTR.ANTICIPATION_NUM_SAMPLES > 0:
+                epoch_results['ant'] = ant_result['mean_AP']
+            for k, v in epoch_results.items():
+                if k not in best or v > best[k][0]:
+                    best[k] = (v, epoch)
 
         if cfg.SOLVER.ENABLE_WANDB:
             run.log({
@@ -216,6 +224,10 @@ def do_perframe_det_train(cfg,
 
         # Shuffle dataset for next epoch
         data_loaders['train'].dataset.shuffle()
+
+    # the results in the paper are those of the best epoch on the test subset
+    for k, (v, e) in best.items():
+        logger.info('Best {} on the test subset: {:.3f} at epoch {} (checkpoint saved for epochs >= 3)'.format(k, v, e))
 
     if cfg.SOLVER.ENABLE_WANDB:
         run.finish()

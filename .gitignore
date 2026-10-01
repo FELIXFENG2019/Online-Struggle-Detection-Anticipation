@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+
+# dataset (see README, section 2)
+data/
+
+# training outputs
+checkpoints/
+wandb/

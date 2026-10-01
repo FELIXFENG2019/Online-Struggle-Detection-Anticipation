@@ -95,6 +95,8 @@ _C.DATA.CLIP_MIXUP_SAMPLE = 'uniform'
 
 # new added for Struggle Dataset
 _C.DATA.DATA_SPLIT_PATH = None
+# Struggle: only evaluate on these attempts, e.g. ['01']; empty for all attempts
+_C.DATA.TEST_ATTEMPTS = []
 _C.DATA.TRAIN_SEUBSET = None
 _C.DATA.TEST_SUBSET = None
 
@@ -108,6 +110,8 @@ _C.INPUT.VISUAL_FEATURE = 'rgb_anet_resnet50'
 _C.INPUT.MOTION_FEATURE = 'flow_anet_resnet50'
 _C.INPUT.OBJECT_FEATURE = 'flow_anet_resnet50'
 _C.INPUT.TARGET_PERFRAME = 'target_perframe'
+# Struggle: feature folder under <DATA_ROOT>/extracted_features/ (e.g. 'slowfast_features', 's3d_features')
+_C.INPUT.FEATURE_DIR = 'slowfast_features'
 
 # ---------------------------------------------------------------------------- #
 # Data Loader
