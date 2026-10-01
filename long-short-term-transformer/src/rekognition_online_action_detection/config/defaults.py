@@ -89,6 +89,8 @@ _C.INPUT.MODALITY = 'twostream'
 _C.INPUT.VISUAL_FEATURE = 'rgb_anet_resnet50'
 _C.INPUT.MOTION_FEATURE = 'flow_anet_resnet50'
 _C.INPUT.TARGET_PERFRAME = 'target_perframe'
+# Struggle: feature folder under <DATA_ROOT>/extracted_features/ (e.g. 'slowfast_features', 's3d_features')
+_C.INPUT.FEATURE_DIR = 'slowfast_features'
 
 # ---------------------------------------------------------------------------- #
 # Data Loader

@@ -8,6 +8,7 @@ import time
 import torch
 import numpy as np
 
+from rekognition_online_action_detection.datasets.perframe_data_layers import load_struggle_features
 from rekognition_online_action_detection.evaluation import compute_result
 
 from ..base_inferences.perframe_det_batch_inference import do_perframe_det_batch_inference
@@ -63,7 +64,7 @@ def do_lstr_stream_inference(cfg, model, device, logger):
     with torch.no_grad():
         for session_idx, session in enumerate(cfg.DATA.TEST_SESSION_SET):
             activity_name, video_name = session.split('-')
-            features = np.load(osp.join(data_root, 'extracted_features', 'slowfast_features', activity_name, video_name + '.npy'), mmap_mode='r')
+            features = load_struggle_features(data_root, cfg.INPUT.FEATURE_DIR, activity_name, video_name)
             target = np.zeros((features.shape[0], num_classes), dtype=np.float32) # initial target shape (L, 2)
             target[:, 0] = 1.0 # background
             
@@ -94,10 +95,10 @@ def do_lstr_stream_inference(cfg, model, device, logger):
                     else:
                         ValueError(f"Unknown action {annotation['label']} for video {video_name}")
             
-            visual_inputs = np.load(
-                osp.join(data_root, 'extracted_features', 'slowfast_features', activity_name, video_name + '.npy'), mmap_mode='r')[:, :2048]
-            motion_inputs = np.load(
-                osp.join(data_root, 'extracted_features', 'slowfast_features', activity_name, video_name + '.npy'), mmap_mode='r')[:, 2048:]
+            visual_inputs = load_struggle_features(
+                data_root, cfg.INPUT.FEATURE_DIR, activity_name, video_name, cfg.INPUT.VISUAL_FEATURE)
+            motion_inputs = load_struggle_features(
+                data_root, cfg.INPUT.FEATURE_DIR, activity_name, video_name, cfg.INPUT.MOTION_FEATURE)
             # visual_inputs = np.load(osp.join(cfg.DATA.DATA_ROOT, cfg.INPUT.VISUAL_FEATURE, session + '.npy'), mmap_mode='r')
             # motion_inputs = np.load(osp.join(cfg.DATA.DATA_ROOT, cfg.INPUT.MOTION_FEATURE, session + '.npy'), mmap_mode='r')
             # target = np.load(osp.join(cfg.DATA.DATA_ROOT, cfg.INPUT.TARGET_PERFRAME, session + '.npy'))

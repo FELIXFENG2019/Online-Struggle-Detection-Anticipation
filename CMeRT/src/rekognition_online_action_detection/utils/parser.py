@@ -75,6 +75,9 @@ def assert_and_infer_cfg(cfg, args):
             if metadata['subset'].lower() in cfg.DATA.TRAIN_SEUBSET:
                 cfg.DATA.TRAIN_SESSION_SET.append(activity_name + '-' + video_name)
             elif metadata['subset'].lower() in cfg.DATA.TEST_SUBSET:
+                # optionally only evaluate on some attempts (e.g. DATA.TEST_ATTEMPTS "['05']")
+                if cfg.DATA.TEST_ATTEMPTS and video_name.split('_')[-1] not in cfg.DATA.TEST_ATTEMPTS:
+                    continue
                 cfg.DATA.TEST_SESSION_SET.append(activity_name + '-' + video_name)
             else:
                 # raise ValueError(f"Unknown subset {metadata['subset']} for video {video_name}")
@@ -114,7 +117,8 @@ def assert_and_infer_cfg(cfg, args):
     # Infer output dir
     config_name = osp.splitext(args.config_file)[0].split('/')[1:]
     task_name = osp.splitext(cfg.DATA.DATA_SPLIT_PATH)[0].split('/')[-3] + '-' + osp.splitext(cfg.DATA.DATA_SPLIT_PATH)[0].split('/')[-2]
-    cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, *config_name, 'combined') # task_name+'-trainonattempt05'
+    # one output folder per config file (each experiment has its own config)
+    cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, *config_name)
     if cfg.SESSION:
         cfg.OUTPUT_DIR = osp.join(cfg.OUTPUT_DIR, cfg.SESSION)
 

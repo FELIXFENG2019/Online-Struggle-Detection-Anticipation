@@ -23,14 +23,17 @@ def do_perframe_det_train(cfg,
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
 
-    import wandb
     if cfg.SOLVER.ENABLE_WANDB:
+        import wandb
         wandb.login()
         run = wandb.init(
             project="lstr-online-struggle-detection",
             # Track hyperparameters and run metadata
             config=cfg
         )
+    # loss function given by MODEL.CRITERIONS in the config (e.g. 'MCE' for cross-entropy)
+    loss_name = cfg.MODEL.CRITERIONS[0][0]
+    best_result, best_epoch = -1.0, -1
     for epoch in range(cfg.SOLVER.START_EPOCH, cfg.SOLVER.START_EPOCH + cfg.SOLVER.NUM_EPOCHS):
         # Reset
         det_losses = {phase: 0.0 for phase in cfg.SOLVER.PHASES}
@@ -54,7 +57,7 @@ def do_perframe_det_train(cfg,
                     det_score = det_score.reshape(-1, cfg.DATA.NUM_CLASSES)
                     det_target = det_target.reshape(-1, cfg.DATA.NUM_CLASSES)
                     # import pdb; pdb.set_trace()
-                    det_loss = criterion['Focal'](det_score, det_target)
+                    det_loss = criterion[loss_name](det_score, det_target)
                     det_losses[phase] += det_loss.item() * batch_size
 
                     # Output log for current batch
@@ -107,6 +110,8 @@ def do_perframe_det_train(cfg,
             end - start,
         ))
         logger.info(' | '.join(log))
+        if 'test' in cfg.SOLVER.PHASES and det_result['mean_AP'] > best_result:
+            best_result, best_epoch = det_result['mean_AP'], epoch
 
         if cfg.SOLVER.ENABLE_WANDB:
             run.log({
@@ -123,6 +128,11 @@ def do_perframe_det_train(cfg,
         # Shuffle dataset for next epoch
         data_loaders['train'].dataset.shuffle()
     
+    if best_epoch >= 0:
+        # the results in the paper are those of the best epoch on the test subset
+        logger.info('Best epoch on the test subset: {} ({}: {:.5f}), checkpoint: epoch-{}.pth'.format(
+            best_epoch, cfg.DATA.METRICS, best_result, best_epoch))
+
     if cfg.SOLVER.ENABLE_WANDB:
         run.finish()
 

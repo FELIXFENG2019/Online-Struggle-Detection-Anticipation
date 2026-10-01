@@ -14,6 +14,27 @@ from .datasets import DATA_LAYERS as registry
 #from rekognition_online_action_detection.utils.ek_utils import (action_to_noun_map, action_to_verb_map)
 
 
+
+# Struggle (EvoStruggle) features are stored as
+#   <DATA_ROOT>/extracted_features/<INPUT.FEATURE_DIR>/<activity>/<video>.npy
+# The 2304-d SlowFast features are the concatenation of the Slow (2048-d, 'rgb_slow')
+# and Fast (256-d, 'flow_fast') pathways; other features (e.g. 'rgb_s3d') are used as a whole.
+STRUGGLE_FEATURE_SLICES = {
+    'rgb_slow': slice(0, 2048),
+    'flow_fast': slice(2048, None),
+}
+
+
+def struggle_feature_path(data_root, feature_dir, activity_name, video_name):
+    return osp.join(data_root, 'extracted_features', feature_dir, activity_name, video_name + '.npy')
+
+
+def load_struggle_features(data_root, feature_dir, activity_name, video_name, feature_name=None):
+    features = np.load(struggle_feature_path(data_root, feature_dir, activity_name, video_name), mmap_mode='r')
+    if feature_name in STRUGGLE_FEATURE_SLICES:
+        features = features[:, STRUGGLE_FEATURE_SLICES[feature_name]]
+    return features
+
 @registry.register('THUMOS')
 @registry.register('CrossTask')
 class CMeRTBatchDataLayer(data.Dataset):
@@ -315,6 +336,9 @@ class CMeRTBatchDataLayer_Struggle(data.Dataset):
         self.cfg = cfg
         self.data_name = cfg.DATA.DATA_NAME
         self.data_root = cfg.DATA.DATA_ROOT
+        self.feature_dir = cfg.INPUT.FEATURE_DIR
+        self.visual_feature = cfg.INPUT.VISUAL_FEATURE
+        self.motion_feature = cfg.INPUT.MOTION_FEATURE
         # self.visual_feature = cfg.INPUT.VISUAL_FEATURE
         # self.motion_feature = cfg.INPUT.MOTION_FEATURE
         # self.target_perframe = cfg.INPUT.TARGET_PERFRAME
@@ -355,7 +379,7 @@ class CMeRTBatchDataLayer_Struggle(data.Dataset):
             for session in self.sessions:
                 # target = np.load(osp.join(self.data_root, self.target_perframe, session + '.npy'))
                 activity_name, video_name = session.split('-')
-                features = np.load(osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r')
+                features = load_struggle_features(self.data_root, self.feature_dir, activity_name, video_name)
                 target = np.zeros((features.shape[0], self.num_classes), dtype=np.float32) # initial target shape (L, 2)
                 target[:, 0] = 1.0 # background
 
@@ -411,10 +435,10 @@ class CMeRTBatchDataLayer_Struggle(data.Dataset):
     def __getitem__(self, index):
         (session, work_start, ant_end, target, segments_before) = self.inputs[index]
         activity_name, video_name = session.split('-')
-        visual_inputs = np.load(
-            osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r') # [:, :2048]
-        motion_inputs = np.load(
-            osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r')# [:, 2048:]
+        visual_inputs = load_struggle_features(
+            self.data_root, self.feature_dir, activity_name, video_name, self.visual_feature)
+        motion_inputs = load_struggle_features(
+            self.data_root, self.feature_dir, activity_name, video_name, self.motion_feature)
 
         # Get work memory
         work_end = ant_end - self.anticipation_length
@@ -508,6 +532,9 @@ class CMeRTStreamInferenceDataLayer_Struggle(data.Dataset):
     def __init__(self, cfg, phase='test'):
         self.cfg = cfg
         self.data_root = cfg.DATA.DATA_ROOT
+        self.feature_dir = cfg.INPUT.FEATURE_DIR
+        self.visual_feature = cfg.INPUT.VISUAL_FEATURE
+        self.motion_feature = cfg.INPUT.MOTION_FEATURE
         # self.visual_feature = cfg.INPUT.VISUAL_FEATURE
         # self.motion_feature = cfg.INPUT.MOTION_FEATURE
         # self.object_feature = cfg.INPUT.OBJECT_FEATURE
@@ -542,7 +569,7 @@ class CMeRTStreamInferenceDataLayer_Struggle(data.Dataset):
             activity_name, video_name = session.split('-')
             # if video_name.split('_')[-1] != '05':
             #     continue
-            features = np.load(osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r')
+            features = load_struggle_features(self.data_root, self.feature_dir, activity_name, video_name)
             target = np.zeros((features.shape[0], self.num_classes), dtype=np.float32) # initial target shape (L, 2)
             target[:, 0] = 1.0 # background
 
@@ -602,10 +629,10 @@ class CMeRTStreamInferenceDataLayer_Struggle(data.Dataset):
     def __getitem__(self, index):
         session, work_start, work_end, target, num_frames = self.inputs[index]
         activity_name, video_name = session.split('-')
-        visual_inputs = np.load(
-            osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r') # [:, :2048]
-        motion_inputs = np.load(
-            osp.join(self.data_root, 'extracted_features', 's3d_features', activity_name, video_name + '.npy'), mmap_mode='r') # [:, 2048:]
+        visual_inputs = load_struggle_features(
+            self.data_root, self.feature_dir, activity_name, video_name, self.visual_feature)
+        motion_inputs = load_struggle_features(
+            self.data_root, self.feature_dir, activity_name, video_name, self.motion_feature)
 
 
         # Get work memory
